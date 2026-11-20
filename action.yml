@@ -79,6 +79,15 @@ runs:
   # environment variable, because a reusable action cannot assume the caller's workflow
   # file is the thing that was reviewed.
   steps:
+    - name: Register the token mask
+      shell: bash
+      env:
+        TOKEN_TO_MASK: ${{ inputs.github-token }}
+      run: |
+        if [ -n "$TOKEN_TO_MASK" ]; then
+          echo "::add-mask::$TOKEN_TO_MASK"
+        fi
+
     - name: Check the inputs
       shell: bash
       env:
@@ -96,6 +105,17 @@ runs:
           --fail-on "$FAIL_ON" \
           --issue-label "$ISSUE_LABEL" \
           --title "$TITLE"
+
+    - name: Guard against non-dry pull_request runs
+      shell: bash
+      env:
+        EVENT_NAME: ${{ github.event_name }}
+        DRY_RUN: ${{ inputs.dry-run }}
+      run: |
+        if [ "$EVENT_NAME" = "pull_request" ] && [ "$DRY_RUN" != "true" ]; then
+          echo "stellar-posture-watch: pull_request event is only supported with dry-run: true" >&2
+          exit 2
+        fi
 
     - name: Fetch the pinned Gauge commit
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

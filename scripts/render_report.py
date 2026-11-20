@@ -9,6 +9,10 @@ let a chain-written value mention a user, a team or ``@all``.
 Nothing here is printed to stdout except a one-line summary. The report body never
 reaches the log.
 
+Outputs are staged as temporaries in the destination directory and committed with
+os.replace, with the body replaced first and the summary second so the summary is
+the commit point.
+
 Exit codes: 0 wrote the body, 2 refused the input.
 """
 
@@ -16,10 +20,13 @@ from __future__ import annotations
 
 import argparse
 import base64
+import contextlib
 import datetime as dt
 import json
+import os
 import re
 import sys
+import tempfile
 from pathlib import Path
 from typing import TypedDict
 
@@ -435,20 +442,60 @@ def main(argv: list[str] | None = None) -> int:
         print(f"render_report: refused: {exc}", file=sys.stderr)
         return 2
     out = Path(args.out)
+    summary_path = Path(args.summary_out) if args.summary_out else None
     counts_text = (
         f"{summary['open']} open, {summary['high']} high, {summary['warn']} warn, "
         f"{summary['accepted']} accepted"
     )
     if not summary["changed"]:
         counts_text = f"{NO_CHANGE_SUMMARY} ({counts_text})"
+    tmp_out: Path | None = None
+    tmp_summary: Path | None = None
     try:
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(body, encoding="utf-8")
-        if args.summary_out:
-            Path(args.summary_out).write_text(
-                json.dumps(summary, sort_keys=True) + "\n", encoding="utf-8"
-            )
+        if str(out).startswith("/dev/") or (
+            out.exists() and (out.is_char_device() or out.is_fifo())
+        ):
+            out.write_text(body, encoding="utf-8")
+        else:
+            with tempfile.NamedTemporaryFile(
+                mode="w", dir=out.parent, encoding="utf-8", delete=False
+            ) as f_body:
+                tmp_out = Path(f_body.name)
+                f_body.write(body)
+                f_body.flush()
+                os.fsync(f_body.fileno())
+
+        if summary_path:
+            summary_path.parent.mkdir(parents=True, exist_ok=True)
+            if str(summary_path).startswith("/dev/") or (
+                summary_path.exists() and (summary_path.is_char_device() or summary_path.is_fifo())
+            ):
+                summary_path.write_text(
+                    json.dumps(summary, sort_keys=True) + "\n", encoding="utf-8"
+                )
+            else:
+                with tempfile.NamedTemporaryFile(
+                    mode="w", dir=summary_path.parent, encoding="utf-8", delete=False
+                ) as f_sum:
+                    tmp_summary = Path(f_sum.name)
+                    f_sum.write(json.dumps(summary, sort_keys=True) + "\n")
+                    f_sum.flush()
+                    os.fsync(f_sum.fileno())
+
+        if tmp_out:
+            os.replace(tmp_out, out)
+            tmp_out = None
+        if summary_path and tmp_summary:
+            os.replace(tmp_summary, summary_path)
+            tmp_summary = None
     except OSError as exc:
+        if tmp_out and tmp_out.exists():
+            with contextlib.suppress(OSError):
+                tmp_out.unlink()
+        if tmp_summary and tmp_summary.exists():
+            with contextlib.suppress(OSError):
+                tmp_summary.unlink()
         print(f"render_report: cannot write {out}: {exc.strerror}", file=sys.stderr)
         return 2
     print(f"render_report: wrote {out} ({len(body)} characters); {counts_text}")
