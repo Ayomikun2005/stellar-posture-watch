@@ -15,7 +15,7 @@ G4 are closed below, on the runs and on the reading of the body against the repo
 and 3.4 did not close it: one maintainer wrote both callers. Every claim here names the run or
 the file it was read from.
 
-Last updated: 2026-11-14T15:21Z (close 9.7, sha256 manifest for report fixtures)
+Last updated: 2026-11-20T02:45Z (close 9.8-9.11, example diagnostics and CI concurrency/matrix)
 rather than three, because a contributor who picked up two of them learned no format at all. The
 organization's `ISSUE_CONTRACT.md` in `posture-sec/.github` defines PI-1: a marker line naming the
 repository, the roadmap row, the kind and the wave tier, then nine numbered sections in the order a
@@ -652,6 +652,10 @@ it is why this repository's value right now is the plumbing rather than the find
   four-column table for all six reports (`policy-unreachable-endpoint.toml` excluded as non-JSON),
   `tests/test_fixture_manifest.py` adds 9 unit tests (taking the suite from 185 to 194 cases), and
   `ruff==0.17.3` and `mypy==2.4.0` pass across all 11 source files. **Issue:** #153.
+- [x] **9.8** Give the example workflow an artifact for the run's numbers and name the action's exit-3 diagnostics artifact. `example/workflow.yml` records outputs to `$RUNNER_TEMP/posture-watch-run.json` (`exit-code`, `issue-number`, `changed`, `report-path`) and uploads artifact `posture-watch-run` (retention 7, `if-no-files-found: ignore`, pinned `actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2`), with comment naming `gauge-diagnostics` as the action's exit-3 stderr. Verified by `tests/test_example_diagnostics_artifact.py`. **Issue:** #85.
+- [x] **9.9** Hold the example workflow to two permissions (`contents: read` and `issues: write`). `tests/test_example_permissions.py` verifies workflow-level permission map contains exactly those two keys, asserts no job-level permission blocks exist, and tests that unknown permissions or `write-all` fail. **Issue:** #86.
+- [x] **9.10** Run CI suite on Python 3.12 as well as 3.11 without moving the required check. `.github/workflows/ci.yml` adds `strategy.matrix.python-version: ["3.11", "3.12"]` with name expression `${{ matrix.python-version == '3.11' && 'ci / python' || format('ci / python ({0})', matrix.python-version) }}` preserving the exact required check name `ci / python` for ruleset 26515104. Verified by `tests/test_workflows_python_matrix.py`. **Issue:** #87.
+- [x] **9.11** Cancel superseded CI runs with a concurrency group. `.github/workflows/ci.yml` declares workflow-level concurrency group `${{ github.workflow }}-${{ github.ref }}` with `cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}` preserving `main` runs for G1 evidence. Verified by `tests/test_workflows_ci_concurrency.py`. **Issue:** #88.
 
 ## 6. Gates
 
@@ -718,7 +722,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 12 | 13 | 92% |
 | 3 | Real use | 5 | 8 | 62% |
-| 9 (backlog) | Backlog, not scheduled | 1 | 7 | 14% |
+| 9 (backlog) | Backlog, not scheduled | 5 | 11 | 45% |
 | **All phases** | **Readiness total** | **35** | **39** | **90%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->
@@ -750,6 +754,7 @@ it is why this repository's value right now is the plumbing rather than the find
 
 | 2026-11-09 | Task 2.9 closes: `site/` arrives with a Web3 Sentinel documentation and showcase site, featuring an interactive workflow generator, live issue preview simulator, and protocol architecture pipeline. `.github/workflows/pages.yml` deploys the site to GitHub Pages. Downstream action step execution guards and token redactions included in the same changeset. | 2.9 |
 | 2026-11-14 | Task 9.7 closes: `tests/fixtures/README.md` gains a `sha256` column binding all six JSON report fixtures to their provenance rows while leaving the six fixture files and `tests/test_render_report.py` untouched, and `tests/test_fixture_manifest.py` adds 9 stdlib tests plus `--print-rows` to verify column shape, row coverage, `derived` markers on hand-built reports, and raw-byte digests, printing both digests and the regeneration command on a mismatch. Suite moves from 185 to 194 cases; `ruff` and `mypy` check 11 source files cleanly. | 9.7 |
+| 2026-11-20 | Tasks 9.8-9.11 close: `example/workflow.yml` records outputs and uploads artifact `posture-watch-run` (retention 7, pinned `actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2`), naming `gauge-diagnostics` in comments; `tests/test_example_permissions.py` locks example permissions to `contents: read` and `issues: write`; `.github/workflows/ci.yml` adds Python 3.11 and 3.12 matrix with name expression preserving `ci / python` check name and adds workflow concurrency cancelling superseded PR runs while preserving main push runs. Suite expands with unit tests across all 4 additions. | 9.8, 9.9, 9.10, 9.11 |
 
 ## 9. Last updated line format
 
