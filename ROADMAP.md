@@ -15,7 +15,7 @@ G4 are closed below, on the runs and on the reading of the body against the repo
 and 3.4 did not close it: one maintainer wrote both callers. Every claim here names the run or
 the file it was read from.
 
-Last updated: 2026-11-21T18:20Z (close 9.19-9.22, body ceiling, issue pagination, single-attempt create, rate-limit reset retry)
+Last updated: 2026-11-21T07:12Z (close 9.23-9.26, exit-code table, blank title, duplicate endpoint, size before read)
 rather than three, because a contributor who picked up two of them learned no format at all. The
 organization's `ISSUE_CONTRACT.md` in `posture-sec/.github` defines PI-1: a marker line naming the
 repository, the roadmap row, the kind and the wave tier, then nine numbered sections in the order a
@@ -710,6 +710,10 @@ it is why this repository's value right now is the plumbing rather than the find
   and retried once, a reset outside raises on the first response naming the reset as a UTC ISO
   timestamp, a 403 without either header or with remaining above zero still fails, and
   `tests/test_sync_rate_limit_reset.py` covers all four shapes. **Issue:** #62.
+- [x] **9.23** Drive the exit code mapping block as a table. Done-when: `tests/test_action_exit_codes.py` extracts the last `run:` block from `action.yml` by step name, refuses to run when it no longer ends in `esac`, and executes it with bash over a 6 by 2 table of `GAUGE_EXIT` in `0`, `1`, `2`, `3`, `4` and the empty value against `BREAK_BUILD` `true` and `false`, asserting the exit code and the exact stdout line. Both mutations were observed locally: the catch-all arm changed to `exit 0` fails a row, and a line after `esac` fails the guard. `action.yml` is unchanged. **Issue:** #74.
+- [x] **9.24** Refuse a whitespace-only issue title before the action starts. Done-when: `check_text_input()` refuses a value blank after `.strip()` with `{name} must not be blank` and returns before the length and control-character checks, without trimming what it passes on, and `tests/test_validate_inputs_blank_text.py` covers a title of spaces, a label of spaces, a tab-only value, the empty string and a padded valid title through `validate_inputs.main()`. The spaces case exited 0 before the guard and exits 2 after, observed locally. **Issue:** #75.
+- [x] **9.25** Refuse a policy that lists the same endpoint twice. Done-when: `check_policy()` tracks the first index of each endpoint string and appends `config <path>: endpoint <url> is listed twice, at index <first> and index <second>`, a non-string entry keeps its own refusal and is never compared, and `tests/test_validate_inputs_duplicate_endpoints.py` covers an exact duplicate, a repeat after a distinct entry, a third copy reporting against the original, two distinct endpoints that pass and a URL differing only by a trailing slash that stays accepted. The array is refused and not rewritten: Gauge reads what the file says. **Issue:** #76.
+- [x] **9.26** Check the config byte limit before decoding the file. Done-when: `check_policy()` reads `path.stat().st_size` before `read_bytes()` and refuses a size over `MAX_CONFIG_BYTES` with the existing message without reading the file, a stat failure keeps `config <path>: cannot read it (<strerror>)`, the post-read guard stays as a second check for a file that grows between the two calls, and `tests/test_validate_inputs_config_size.py` covers those three cases with a path stand-in that counts reads plus a real policy of exactly 1 MiB that is read and accepted. **Issue:** #77.
 
 ## 6. Gates
 
@@ -776,7 +780,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 12 | 13 | 92% |
 | 3 | Real use | 5 | 8 | 62% |
-| 9 (backlog) | Backlog, not scheduled | 16 | 22 | 73% |
+| 9 (backlog) | Backlog, not scheduled | 20 | 26 | 77% |
 | **All phases** | **Readiness total** | **35** | **39** | **90%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->
@@ -811,6 +815,8 @@ it is why this repository's value right now is the plumbing rather than the find
 | 2026-11-20 | Tasks 9.8, 9.9, and 9.10 close: `scripts/render_report.py` stages outputs through temporary files and replaces body before summary; `action.yml` adds runner token masking as the first composite step and an event guard refusing non-dry pull_request runs before checkout; 3 new unit test modules (`test_output_atomicity.py`, `test_action_token_masking.py`, `test_action_event_guard.py`) add 8 test cases. | 9.8, 9.9, 9.10 |
 | 2026-11-20T17:19Z | CI hardening closes four backlog rows: 9.15 puts `timeout-minutes: 15` on `ci / python`; 9.16 gates `self-check / action` on head repo; 9.17 splits `watch` into `audit` and `write` jobs; 9.18 puts `timeout-minutes: 30` on build job. Four new test modules add 28 cases. | 9.15, 9.16, 9.17, 9.18 |
 | 2026-11-20T16:57Z | Tasks 9.11–9.14 close locally: preflight rejects non-boolean spellings before Gauge checkout; tests protect the example placeholder and all workflow action pins; CI cancels superseded pull request runs. The Python 3.12 suite passed 220 tests, including the mutation and before/after checks. README metrics discovery now includes the repository root, so it counts importable tests rather than import failures. | 9.11, 9.12, 9.13, 9.14 |
+
+| 2026-11-21T07:12Z | Tasks 9.23 to 9.26 close locally. 9.23: `tests/test_action_exit_codes.py` reads the `case "$GAUGE_EXIT"` block out of `action.yml` by step name and runs it with bash over twelve rows, which is the first time D-05's colour decision has been executed on a desk; the file itself is untouched. 9.24, 9.25 and 9.26 add three refusals to `validate_inputs.py`: a title or label blank after trimming, an endpoint listed twice with both indexes named, and the 1 MiB ceiling answered from `stat()` before the policy is read, with the guard after the read kept as the second check. 31 cases across four new modules take the suite to 298 cases, `ruff` 0.17.3 and `mypy` 2.4.0 are clean from the pinned venv, and `ARCHITECTURE.md` section 3 and the `CONTRIBUTING.md` rule row say what the pre-flight now refuses. | 9.23, 9.24, 9.25, 9.26 |
 
 ## 9. Last updated line format
 
