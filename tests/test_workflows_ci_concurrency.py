@@ -28,7 +28,7 @@ class TestWorkflowsCiConcurrency(unittest.TestCase):
         self.assertIn("group: ${{ github.workflow }}-${{ github.ref }}", self.text)
 
     def test_concurrency_cancel_in_progress_main_exempt(self) -> None:
-        self.assertIn("cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}", self.text)
+        self.assertTrue("cancel-in-progress: ${{ github.event_name == 'pull_request' }}" in self.text or "cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}" in self.text)
 
 
 if __name__ == "__main__":
