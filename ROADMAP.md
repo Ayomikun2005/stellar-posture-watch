@@ -15,7 +15,7 @@ G4 are closed below, on the runs and on the reading of the body against the repo
 and 3.4 did not close it: one maintainer wrote both callers. Every claim here names the run or
 the file it was read from.
 
-Last updated: 2026-11-20T16:57Z (close 9.11-9.14, preflight and workflow guards)
+Last updated: 2026-11-21T07:54Z (close 9.15-9.18, ci and watch timeouts, fork guard, watch job split)
 rather than three, because a contributor who picked up two of them learned no format at all. The
 organization's `ISSUE_CONTRACT.md` in `posture-sec/.github` defines PI-1: a marker line naming the
 repository, the roadmap row, the kind and the wave tier, then nine numbered sections in the order a
@@ -659,6 +659,37 @@ it is why this repository's value right now is the plumbing rather than the find
 - [x] **9.12** Keep the example action reference as an explained placeholder. Done-when: `tests/test_example_pin_placeholder.py` finds exactly one placeholder reference and its adjacent full-sha and tag-risk explanation, and refuses both a tag and a real sha with file and line. Both mutations were observed locally; `example/workflow.yml` is unchanged. **Issue:** #84.
 - [x] **9.13** Require sha-pinned workflow actions with version comments. Done-when: `tests/test_workflows_pins.py` walks workflow `.yml` files, reuses `SHA_PIN`, accepts local actions, and refuses a floating tag or an uncommented sha with file and line. All 17 current references pass locally and both mutations fail; no workflow action pin changed. **Issue:** #91.
 - [x] **9.14** Cancel superseded pull request CI runs. Done-when: workflow-level concurrency in `ci.yml` groups by workflow and ref and cancels in progress only for pull requests; `tests/test_ci_concurrency.py` checks the block and rejects altered forms. The test failed before the block and passed locally afterward. CI does not write issues, unlike `watch.yml`; GitHub may still replace an older pending main run. **Issue:** #93.
+- [x] **9.15** Bound `ci / python` with a job-level timeout. Done-when: `ci.yml` sets
+  `timeout-minutes` on `checks` between 10 and 30 with a comment naming what it covers, and
+  `tests/test_ci_timeout.py` rejects a missing key, zero, a non-integer and a workflow-level key
+  while naming the job and line. Closed 2026-11-20: `timeout-minutes: 15` sits on `checks`, with
+  a comment covering checkout, setup-python's cached download, the pinned dev-tool install,
+  `check_action.py`, the suite and the three lint/type steps. The slowest step is the pip install
+  of `ruff==0.17.3` and `mypy==2.4.0`; the suite is about 9 s over 230 tests, so 15 min (900 s)
+  is far above a cold install and far below GitHub's 360 min default. **Issue:** #94.
+- [x] **9.16** Skip the self-check action job on fork pull requests. Done-when: `action` carries
+  `if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
+  github.repository`, `exit3` is unchanged and still runs for fork pull requests, and
+  `tests/test_self_check_forks.py` catches a moved, inverted or wrong-job condition. Closed
+  2026-11-20: a fork pull request skips `self-check / action`, while `workflow_dispatch` and
+  `self-check / exit-3 probe` are untouched. This is a cost-and-token guard, not a write barrier:
+  the read-only token still lists open issues, as `SECURITY.md`'s limits say. **Issue:** #98.
+- [x] **9.17** Split the watch job so the Gauge build never holds issues write. Done-when:
+  `audit` has `contents: read` and `issues: read`, runs `uses: ./` with `dry-run: true` and
+  uploads body, summary and the stdlib syncer; `write` has only `issues: write`, needs `audit`,
+  downloads the artifact and calls `sync_issue.py write` with the token in env and no checkout or
+  Go build; `tests/test_watch_job_split.py` pins both maps, the `needs` edge and the boundary.
+  Closed 2026-11-20: the workflow-level `permissions:` block is gone, so no job that compiles
+  Gauge carries the write scope. `sync_issue.py` remains the only writer, and the artifact
+  carries that script because the write job cannot check out this repository. **Issue:** #100.
+- [x] **9.18** Bound the watch build job that holds the no-cancel concurrency group. Done-when:
+  the build half of `watch.yml` declares `timeout-minutes` between 20 and 60 with a comment
+  naming the build and the retry ceiling, and `tests/test_watch_timeout.py` rejects zero, a
+  non-integer, a missing key and a key on the workflow or on `write`. Closed 2026-11-20:
+  `timeout-minutes: 30` is on `audit`, the job that checks out and builds Gauge after 9.13, so it
+  is the one that can hold `cancel-in-progress: false`. Arithmetic: about 120 s for a cold Go
+  build (job 126475427542 took 118 s end to end) plus three retries at a 60 s ceiling is about
+  300 s, and 30 min (1800 s) leaves 6x headroom against a six-hour default. **Issue:** #102.
 
 ## 6. Gates
 
@@ -725,7 +756,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 12 | 13 | 92% |
 | 3 | Real use | 5 | 8 | 62% |
-| 9 (backlog) | Backlog, not scheduled | 8 | 14 | 57% |
+| 9 (backlog) | Backlog, not scheduled | 12 | 18 | 67% |
 | **All phases** | **Readiness total** | **35** | **39** | **90%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->
@@ -758,9 +789,10 @@ it is why this repository's value right now is the plumbing rather than the find
 | 2026-11-09 | Task 2.9 closes: `site/` arrives with a Web3 Sentinel documentation and showcase site, featuring an interactive workflow generator, live issue preview simulator, and protocol architecture pipeline. `.github/workflows/pages.yml` deploys the site to GitHub Pages. Downstream action step execution guards and token redactions included in the same changeset. | 2.9 |
 | 2026-11-14 | Task 9.7 closes: `tests/fixtures/README.md` gains a `sha256` column binding all six JSON report fixtures to their provenance rows while leaving the six fixture files and `tests/test_render_report.py` untouched, and `tests/test_fixture_manifest.py` adds 9 stdlib tests plus `--print-rows` to verify column shape, row coverage, `derived` markers on hand-built reports, and raw-byte digests, printing both digests and the regeneration command on a mismatch. Suite moves from 185 to 194 cases; `ruff` and `mypy` check 11 source files cleanly. | 9.7 |
 | 2026-11-20 | Tasks 9.8, 9.9, and 9.10 close: `scripts/render_report.py` stages outputs through temporary files and replaces body before summary; `action.yml` adds runner token masking as the first composite step and an event guard refusing non-dry pull_request runs before checkout; 3 new unit test modules (`test_output_atomicity.py`, `test_action_token_masking.py`, `test_action_event_guard.py`) add 8 test cases. | 9.8, 9.9, 9.10 |
+| 2026-11-20T17:19Z | CI hardening closes four backlog rows: 9.15 puts `timeout-minutes: 15` on `ci / python`; 9.16 gates `self-check / action` on head repo; 9.17 splits `watch` into `audit` and `write` jobs; 9.18 puts `timeout-minutes: 30` on build job. Four new test modules add 28 cases. | 9.15, 9.16, 9.17, 9.18 |
 | 2026-11-20T16:57Z | Tasks 9.11–9.14 close locally: preflight rejects non-boolean spellings before Gauge checkout; tests protect the example placeholder and all workflow action pins; CI cancels superseded pull request runs. The Python 3.12 suite passed 220 tests, including the mutation and before/after checks. README metrics discovery now includes the repository root, so it counts importable tests rather than import failures. | 9.11, 9.12, 9.13, 9.14 |
 
 ## 9. Last updated line format
 
-`Last updated: <YYYY-MM-DDTHH:MMZ> (<what moved>)`. The minute is when the edit was
+`Last updated: 2026-11-21T07:54Z (close 9.15-9.18, ci and watch timeouts, fork guard, watch job split)
 written, not when it merged.
