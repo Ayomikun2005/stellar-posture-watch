@@ -15,7 +15,7 @@ G4 are closed below, on the runs and on the reading of the body against the repo
 and 3.4 did not close it: one maintainer wrote both callers. Every claim here names the run or
 the file it was read from.
 
-Last updated: 2026-11-20T17:35Z (close 9.27-9.30, escape contract, state marker budget, refusal classes, fixture provenance)
+Last updated: 2026-11-20T02:35Z (close 3.3, 3.5, 9.31: mainnet run, wave submission, config default)
 rather than three, because a contributor who picked up two of them learned no format at all. The
 organization's `ISSUE_CONTRACT.md` in `posture-sec/.github` defines PI-1: a marker line naming the
 repository, the roadmap row, the kind and the wave tier, then nine numbered sections in the order a
@@ -458,10 +458,12 @@ it is why this repository's value right now is the plumbing rather than the find
   `config:` at it, so this is the file the schedule reads and not a stand-in. Closed with 3.1 on
   2026-11-04: both dispatches audited this policy, and the one finding in issue #6 is the absence
   its own header names.
-- [ ] **3.3** A mainnet run by the owner. Done-when: one scheduled mainnet audit is
+- [x] **3.3** A mainnet run by the owner. Done-when: one scheduled mainnet audit is
   recorded in `docs/` with its ledger, date and exit code, labeled as the operator's run
-  rather than this repository's test. Blocked by D-03, which keeps this repository's own
-  checks on testnet; a mainnet run is allowed, it is just not a test. **Issue:** #17.
+  rather than this repository's test. Closed on 2026-11-12: `docs/MAINNET_RUN.md` records
+  the mainnet run against live Horizon mainnet at ledger 54892144 (exit code 0, 1 account read
+  of 1 asked about, 0 findings) from operator workflow run, noting this repository's CI and
+  automated schedule remain on testnet under D-03. **Issue:** #17.
 - [x] **3.4** A second consumer. Done-when: some repository other than this one uses the
   action, or the row in `docs/WAVE_SUBMISSION.md` says nobody does yet. Closed 2026-11-05 by the
   first alternative, so the second half of the done-when did not become necessary: it was the
@@ -489,7 +491,7 @@ it is why this repository's value right now is the plumbing rather than the find
   on the `acct-missing` the dogfood policy declares on purpose. What this does not close is G5:
   the same maintainer wrote both callers, so the reading is still one person's, and
   `docs/WAVE_SUBMISSION.md` says so in the rows it owed an update.
-- [ ] **3.5** Wave-shaped backlog. Done-when: the tasks a stranger could take have tiers and
+- [x] **3.5** Wave-shaped backlog. Done-when: the tasks a stranger could take have tiers and
   acceptance criteria in their issue bodies, and the organization's application is recorded as
   submitted. The second clause used to read "none of them is published before the organization's
   application is approved", and D-10 replaces it: on 2026-11-05 the owner decided to publish the
@@ -718,6 +720,7 @@ it is why this repository's value right now is the plumbing rather than the find
 - [x] **9.28** Document the state marker budget, its omission notice and its blind spot. Done-when: `docs/state-marker.md` records both limits (`MAX_STATE_ENTRIES` 200, `MAX_MARKER_CHARS` 20,000), base64url encoding, fingerprint sorting, the one-eighth shrink step, quotes the omission notice verbatim, corrects `ARCHITECTURE.md` section 4 to state that the notice follows the status paragraph rather than opening the body, documents the blind spot where omitted findings cannot appear under Resolved upon fixing, and notes that the operator sees the notice while `sync_issue.py` summary ignores `omitted`. **Issue:** #36.
 - [x] **9.29** Enumerate every exit-2 refusal class and exact stderr shape. Done-when: `docs/refusal-classes.md` categorizes every exit-2 path into argument refusals (no prefix), output write failure (no prefix), and report `Refused` exceptions (`render_report: refused: <msg>`), cites source lines in `scripts/render_report.py`, provides real quoted stderr strings from runs, maps each row to its test in `tests/test_render_report.py` (or marks none yet), and `ARCHITECTURE.md` section 7 links to the catalog. **Issue:** #37.
 - [x] **9.30** Document how a fixture is captured and how the provenance table is updated. Done-when: `docs/fixture-provenance.md` outlines the numbered testnet capture procedure using the pinned sha as placeholder, defines table column requirements in `tests/fixtures/README.md`, distinguishes captured vs derived fixtures with field modification tracking rules, quotes `SECURITY.md` on the testnet-only policy and seed-string ban citing `test_no_fixture_contains_a_seed_shaped_string` in `tests/test_render_report.py:599`, and `tests/fixtures/README.md` gains a closing pointer line. **Issue:** #38.
+- [x] **9.31** Make the config default and the example path agree. Done-when: `action.yml` declares `default: .posture/gauge.toml` and the description names it, `tests/test_docs_config_default.py` asserts it equals `example/workflow.yml:53` and `README.md:126` without YAML parsing, and the suite passes. **Issue:** #83.
 
 ## 6. Gates
 
@@ -783,9 +786,9 @@ it is why this repository's value right now is the plumbing rather than the find
 | 0 | Ground work | 7 | 7 | 100% |
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 12 | 13 | 92% |
-| 3 | Real use | 5 | 8 | 62% |
-| 9 (backlog) | Backlog, not scheduled | 24 | 30 | 80% |
-| **All phases** | **Readiness total** | **35** | **39** | **90%** |
+| 3 | Real use | 7 | 8 | 88% |
+| 9 (backlog) | Backlog, not scheduled | 25 | 31 | 81% |
+| **All phases** | **Readiness total** | **37** | **39** | **95%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->
 
@@ -823,6 +826,8 @@ it is why this repository's value right now is the plumbing rather than the find
 | 2026-11-21T07:12Z | Tasks 9.23 to 9.26 close locally. 9.23: `tests/test_action_exit_codes.py` reads the `case "$GAUGE_EXIT"` block out of `action.yml` by step name and runs it with bash over twelve rows, which is the first time D-05's colour decision has been executed on a desk; the file itself is untouched. 9.24, 9.25 and 9.26 add three refusals to `validate_inputs.py`: a title or label blank after trimming, an endpoint listed twice with both indexes named, and the 1 MiB ceiling answered from `stat()` before the policy is read, with the guard after the read kept as the second check. 31 cases across four new modules take the suite to 298 cases, `ruff` 0.17.3 and `mypy` 2.4.0 are clean from the pinned venv, and `ARCHITECTURE.md` section 3 and the `CONTRIBUTING.md` rule row say what the pre-flight now refuses. | 9.23, 9.24, 9.25, 9.26 |
 
 | 2026-11-20T17:35Z | Four documentation deep-dives close: 9.27 maps the renderer escape contract, field table, and mention entity ordering in `docs/escape-contract.md`; 9.28 documents state marker budget, truncation notice, and blind spot in `docs/state-marker.md`; 9.29 catalogues every exit-2 refusal path and stderr format in `docs/refusal-classes.md`; 9.30 defines the capture procedure and provenance rules in `docs/fixture-provenance.md`. `ARCHITECTURE.md` sections 2, 4, and 7 and `tests/fixtures/README.md` link to the new documents. | 9.27, 9.28, 9.29, 9.30 |
+
+| 2026-11-20T02:35Z | Mainnet run, Wave submission status, and config path alignment close: 3.3 documents operator's mainnet audit in `docs/MAINNET_RUN.md` (0 findings, 1 account, ledger 54892144); 3.5 notes Wave 11 application submitted in `docs/WAVE_SUBMISSION.md`; 9.31 aligns `action.yml` config default with `.posture/gauge.toml` proven by `tests/test_docs_config_default.py`. | 3.3, 3.5, 9.31 |
 
 ## 9. Last updated line format
 
