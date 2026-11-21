@@ -15,7 +15,7 @@ G4 are closed below, on the runs and on the reading of the body against the repo
 and 3.4 did not close it: one maintainer wrote both callers. Every claim here names the run or
 the file it was read from.
 
-Last updated: 2026-11-21T07:12Z (close 9.23-9.26, exit-code table, blank title, duplicate endpoint, size before read)
+Last updated: 2026-11-20T17:35Z (close 9.27-9.30, escape contract, state marker budget, refusal classes, fixture provenance)
 rather than three, because a contributor who picked up two of them learned no format at all. The
 organization's `ISSUE_CONTRACT.md` in `posture-sec/.github` defines PI-1: a marker line naming the
 repository, the roadmap row, the kind and the wave tier, then nine numbered sections in the order a
@@ -714,6 +714,10 @@ it is why this repository's value right now is the plumbing rather than the find
 - [x] **9.24** Refuse a whitespace-only issue title before the action starts. Done-when: `check_text_input()` refuses a value blank after `.strip()` with `{name} must not be blank` and returns before the length and control-character checks, without trimming what it passes on, and `tests/test_validate_inputs_blank_text.py` covers a title of spaces, a label of spaces, a tab-only value, the empty string and a padded valid title through `validate_inputs.main()`. The spaces case exited 0 before the guard and exits 2 after, observed locally. **Issue:** #75.
 - [x] **9.25** Refuse a policy that lists the same endpoint twice. Done-when: `check_policy()` tracks the first index of each endpoint string and appends `config <path>: endpoint <url> is listed twice, at index <first> and index <second>`, a non-string entry keeps its own refusal and is never compared, and `tests/test_validate_inputs_duplicate_endpoints.py` covers an exact duplicate, a repeat after a distinct entry, a third copy reporting against the original, two distinct endpoints that pass and a URL differing only by a trailing slash that stays accepted. The array is refused and not rewritten: Gauge reads what the file says. **Issue:** #76.
 - [x] **9.26** Check the config byte limit before decoding the file. Done-when: `check_policy()` reads `path.stat().st_size` before `read_bytes()` and refuses a size over `MAX_CONFIG_BYTES` with the existing message without reading the file, a stat failure keeps `config <path>: cannot read it (<strerror>)`, the post-read guard stays as a second check for a file that grows between the two calls, and `tests/test_validate_inputs_config_size.py` covers those three cases with a path stand-in that counts reads plus a real policy of exactly 1 MiB that is read and accepted. **Issue:** #77.
+- [x] **9.27** Record the escape order and the mention rewrite in `ARCHITECTURE.md` section 2 and `docs/escape-contract.md`. Done-when: `ARCHITECTURE.md` section 2 states the escape order and explains why reversing it breaks the zero-width space entity in mentions, records the rule of `escape()` for free text and `fenced()` only for values Gauge constrains, and `docs/escape-contract.md` catalogues all report-derived strings rendered in the body, their treatments, lines in `scripts/render_report.py`, and citations to `test_a_home_domain_of_markup_is_escaped` and `test_mentions_in_chain_fields_cannot_notify_anyone`. **Issue:** #35.
+- [x] **9.28** Document the state marker budget, its omission notice and its blind spot. Done-when: `docs/state-marker.md` records both limits (`MAX_STATE_ENTRIES` 200, `MAX_MARKER_CHARS` 20,000), base64url encoding, fingerprint sorting, the one-eighth shrink step, quotes the omission notice verbatim, corrects `ARCHITECTURE.md` section 4 to state that the notice follows the status paragraph rather than opening the body, documents the blind spot where omitted findings cannot appear under Resolved upon fixing, and notes that the operator sees the notice while `sync_issue.py` summary ignores `omitted`. **Issue:** #36.
+- [x] **9.29** Enumerate every exit-2 refusal class and exact stderr shape. Done-when: `docs/refusal-classes.md` categorizes every exit-2 path into argument refusals (no prefix), output write failure (no prefix), and report `Refused` exceptions (`render_report: refused: <msg>`), cites source lines in `scripts/render_report.py`, provides real quoted stderr strings from runs, maps each row to its test in `tests/test_render_report.py` (or marks none yet), and `ARCHITECTURE.md` section 7 links to the catalog. **Issue:** #37.
+- [x] **9.30** Document how a fixture is captured and how the provenance table is updated. Done-when: `docs/fixture-provenance.md` outlines the numbered testnet capture procedure using the pinned sha as placeholder, defines table column requirements in `tests/fixtures/README.md`, distinguishes captured vs derived fixtures with field modification tracking rules, quotes `SECURITY.md` on the testnet-only policy and seed-string ban citing `test_no_fixture_contains_a_seed_shaped_string` in `tests/test_render_report.py:599`, and `tests/fixtures/README.md` gains a closing pointer line. **Issue:** #38.
 
 ## 6. Gates
 
@@ -780,7 +784,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 12 | 13 | 92% |
 | 3 | Real use | 5 | 8 | 62% |
-| 9 (backlog) | Backlog, not scheduled | 20 | 26 | 77% |
+| 9 (backlog) | Backlog, not scheduled | 24 | 30 | 80% |
 | **All phases** | **Readiness total** | **35** | **39** | **90%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->
@@ -817,6 +821,8 @@ it is why this repository's value right now is the plumbing rather than the find
 | 2026-11-20T16:57Z | Tasks 9.11–9.14 close locally: preflight rejects non-boolean spellings before Gauge checkout; tests protect the example placeholder and all workflow action pins; CI cancels superseded pull request runs. The Python 3.12 suite passed 220 tests, including the mutation and before/after checks. README metrics discovery now includes the repository root, so it counts importable tests rather than import failures. | 9.11, 9.12, 9.13, 9.14 |
 
 | 2026-11-21T07:12Z | Tasks 9.23 to 9.26 close locally. 9.23: `tests/test_action_exit_codes.py` reads the `case "$GAUGE_EXIT"` block out of `action.yml` by step name and runs it with bash over twelve rows, which is the first time D-05's colour decision has been executed on a desk; the file itself is untouched. 9.24, 9.25 and 9.26 add three refusals to `validate_inputs.py`: a title or label blank after trimming, an endpoint listed twice with both indexes named, and the 1 MiB ceiling answered from `stat()` before the policy is read, with the guard after the read kept as the second check. 31 cases across four new modules take the suite to 298 cases, `ruff` 0.17.3 and `mypy` 2.4.0 are clean from the pinned venv, and `ARCHITECTURE.md` section 3 and the `CONTRIBUTING.md` rule row say what the pre-flight now refuses. | 9.23, 9.24, 9.25, 9.26 |
+
+| 2026-11-20T17:35Z | Four documentation deep-dives close: 9.27 maps the renderer escape contract, field table, and mention entity ordering in `docs/escape-contract.md`; 9.28 documents state marker budget, truncation notice, and blind spot in `docs/state-marker.md`; 9.29 catalogues every exit-2 refusal path and stderr format in `docs/refusal-classes.md`; 9.30 defines the capture procedure and provenance rules in `docs/fixture-provenance.md`. `ARCHITECTURE.md` sections 2, 4, and 7 and `tests/fixtures/README.md` link to the new documents. | 9.27, 9.28, 9.29, 9.30 |
 
 ## 9. Last updated line format
 
